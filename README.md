@@ -1,6 +1,6 @@
 # android-BenchApp
 
-Very simple Web View wrapper for http://www.benchapp.com\
+Very simple Web View wrapper for http://www.benchapp.com
 
 ![][]
 
