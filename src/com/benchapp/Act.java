@@ -30,39 +30,107 @@ package com.benchapp;
 
 import android.annotation.*;
 import android.app.*;
-import android.os.Bundle;
+import android.content.*;
+import android.graphics.*;
+import android.os.*;
 import android.view.*;
 import android.webkit.*;
+
+import java.io.*;
 
 import static android.view.ViewGroup.LayoutParams.*;
 
 public class Act extends Activity {
 
-    private ProgressDialog progress;
+    private Handler handler = new Handler();
+    private View cv;
+    private WebView wv;
 
-    @SuppressLint("SetJavaScriptEnabled")
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        WebView wv = new WebView(this);
+        cv = new Splash(this);
+        setContentView(cv);
+
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+
+    private void init() {
+        wv = new WebView(this);
         wv.setLayoutParams(new ViewGroup.LayoutParams(FILL_PARENT, FILL_PARENT));
         wv.getSettings().setJavaScriptEnabled(true);
+        wv.getSettings().setDomStorageEnabled(true);
         wv.getSettings().setLoadWithOverviewMode(true);
+        wv.getSettings().setDatabaseEnabled(true);
         wv.getSettings().setUseWideViewPort(true);
-        progress = ProgressDialog.show(this, "Loading", "Please wait...", true);
-        progress.setCancelable(false);
+        wv.getSettings().setBuiltInZoomControls(false);
+        wv.getSettings().setAppCacheEnabled(true);
+        wv.getSettings().setAppCacheMaxSize(100 * 1024 * 1024); // 100MB
         wv.setWebViewClient(new WebViewClient() {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                progress.show();
                 view.loadUrl(url);
                 return true;
             }
 
             public void onPageFinished(WebView view, final String url) {
-                progress.dismiss();
+                if (cv instanceof Splash) {
+                    cv = wv;
+                    handler.postDelayed(new Runnable() { public void run() { setContentView(cv); } }, 750);
+                }
             }
         });
         wv.loadUrl("http:///www.benchapp.com");
-        setContentView(wv);
     }
 
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if ((keyCode == KeyEvent.KEYCODE_BACK) && wv != null && wv.canGoBack()) {
+            wv.goBack();
+            return true;
+        } else {
+            return super.onKeyDown(keyCode, event);
+        }
+    }
+
+
+    private class Splash extends View {
+
+        private boolean posted;
+        private Bitmap bitmap;
+
+        public Splash(Context context) {
+            super(context);
+            setBackgroundColor(Color.BLACK);
+        }
+
+        public void draw(Canvas c) {
+            super.draw(c);
+            if (!posted) {
+                handler.post(new Runnable() {
+                    public void run() {
+                        init();
+                    }
+                });
+                posted = true;
+            }
+            if (bitmap == null) {
+                InputStream is = null;
+                try {
+                    is = getResources() != null ? getResources().openRawResource(R.drawable.icon) : null;
+                    bitmap = is != null ? BitmapFactory.decodeStream(is) : null;
+                } finally {
+                    if (is != null) {
+                        try {
+                            is.close();
+                        } catch (IOException e) { /* ignore */ }
+                    }
+                }
+            }
+            if (bitmap != null) {
+                int x = (getWidth() - bitmap.getWidth()) / 2;
+                int y = (getHeight() - bitmap.getHeight()) / 2;
+                c.drawBitmap(bitmap, x, y, null);
+            }
+        }
+
+    }
 }
