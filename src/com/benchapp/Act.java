@@ -50,7 +50,6 @@ public class Act extends Activity {
         super.onCreate(savedInstanceState);
         cv = new Splash(this);
         setContentView(cv);
-
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -67,6 +66,7 @@ public class Act extends Activity {
         wv.getSettings().setAppCacheEnabled(true);
         wv.getSettings().setAppCacheMaxSize(100 * 1024 * 1024); // 100MB
         wv.setWebViewClient(new WebViewClient() {
+
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 view.loadUrl(url);
                 return true;
@@ -133,4 +133,5 @@ public class Act extends Activity {
         }
 
     }
+
 }
