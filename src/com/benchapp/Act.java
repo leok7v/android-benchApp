@@ -33,6 +33,7 @@ import android.app.*;
 import android.content.*;
 import android.graphics.*;
 import android.os.*;
+import android.util.*;
 import android.view.*;
 import android.webkit.*;
 
@@ -42,14 +43,25 @@ import static android.view.ViewGroup.LayoutParams.*;
 
 public class Act extends Activity {
 
+    private static final String TAG = Act.class.getSimpleName();
+
     private Handler handler = new Handler();
     private View cv;
     private WebView wv;
+    private String ua;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         cv = new Splash(this);
+        if (!GCM.create(this)) {
+            // TODO: prompt user to get valid Play Services APK.
+        }
         setContentView(cv);
+    }
+
+    protected void onResume() {
+        super.onResume();
+        GCM.checkPlayServices(this);
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -57,20 +69,39 @@ public class Act extends Activity {
     private void init() {
         wv = new WebView(this);
         wv.setLayoutParams(new ViewGroup.LayoutParams(FILL_PARENT, FILL_PARENT));
-        wv.getSettings().setJavaScriptEnabled(true);
-        wv.getSettings().setDomStorageEnabled(true);
-        wv.getSettings().setLoadWithOverviewMode(true);
-        wv.getSettings().setDatabaseEnabled(true);
-        wv.getSettings().setUseWideViewPort(true);
-        wv.getSettings().setBuiltInZoomControls(false);
-        wv.getSettings().setAppCacheEnabled(true);
-        wv.getSettings().setAppCacheMaxSize(100 * 1024 * 1024); // 100MB
+        WebSettings ws = wv.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setLoadWithOverviewMode(true);
+        ws.setDatabaseEnabled(true);
+        ws.setUseWideViewPort(true);
+        ws.setBuiltInZoomControls(false);
+        ws.setAppCacheEnabled(true);
+        ws.setAppCacheMaxSize(100 * 1024 * 1024); // 100MB
+        ws.setAllowContentAccess(true);
+        ws.setAllowFileAccess(true);
+        ws.setJavaScriptCanOpenWindowsAutomatically(true);
         wv.setWebViewClient(new WebViewClient() {
 
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 view.loadUrl(url);
+                if (ua == null) {
+                    ua = wv.getSettings().getUserAgentString();
+                    Log.d(Act.class.getSimpleName(), "UserAgent: " + ua);
+                }
+                Log.d(Act.class.getSimpleName(), url);
                 return true;
             }
+
+            public void onLoadResource(WebView view, String url) {
+                Log.d(Act.class.getSimpleName(), "onLoadResource " + url);
+            }
+
+            public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                Log.d(Act.class.getSimpleName(), "shouldInterceptRequest " + url);
+                return null;
+            }
+
 
             public void onPageFinished(WebView view, final String url) {
                 if (cv instanceof Splash) {
@@ -85,12 +116,12 @@ public class Act extends Activity {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_BACK) && wv != null && wv.canGoBack()) {
             wv.goBack();
+            GCM.send(); // TODO: this is just for testing, shouldn't be here...
             return true;
         } else {
             return super.onKeyDown(keyCode, event);
         }
     }
-
 
     private class Splash extends View {
 
